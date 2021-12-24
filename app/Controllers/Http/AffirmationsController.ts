@@ -1,21 +1,21 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 
-import Obrigado from 'App/Models/Obrigado'
+import Affirmation from 'App/Models/Affirmation'
 import User from 'App/Models/User'
 
-export default class ObrigadosController {
+export default class AffirmationsController {
   public async index() {
-    const all = await Obrigado.all()
+    const all = await Affirmation.all()
 
     return all
   }
 
   public async show({ request }: HttpContextContract) {
-    const obrigadoId: number = request.param('id')
-    const obrigado = await Obrigado.findOrFail(obrigadoId)
+    const affirmationId: number = request.param('id')
+    const affirmation = await Affirmation.findOrFail(affirmationId)
 
-    return obrigado
+    return affirmation
   }
 
   public async store({ auth, request, response }: HttpContextContract) {
@@ -44,27 +44,27 @@ export default class ObrigadosController {
     currentUser.save()
     receiverUser.save()
 
-    const obrigado = await Obrigado.create({
+    const affirmation = await Affirmation.create({
       senderId: currentUserId,
       receiverId: receiverUser.id,
       value: requestBody.value,
       message: requestBody.message,
     })
 
-    return obrigado
+    return affirmation
   }
 
   public async destroy({ auth, request, response }: HttpContextContract) {
-    const obrigadoId: number = request.param('id')
-    const obrigado = await Obrigado.find(obrigadoId)
-    if (!obrigado) {
-      return response.notFound('Obrigado não econtrado')
+    const affirmationId: number = request.param('id')
+    const affirmation = await Affirmation.find(affirmationId)
+    if (!affirmation) {
+      return response.notFound('Affirmation não econtrado')
     }
 
     await auth.use('api').authenticate()
     const currentUserId: number = auth.use('api').user.id
 
-    if (obrigado.senderId != currentUserId) {
+    if (affirmation.senderId != currentUserId) {
       return response.unauthorized('Você não é o remetente')
     }
 
@@ -73,17 +73,17 @@ export default class ObrigadosController {
       return response.notFound('Usuário não econtrado.')
     }
 
-    const receiverUser = await User.find(obrigado.receiverId)
+    const receiverUser = await User.find(affirmation.receiverId)
     if (!receiverUser) {
       return response.notFound('Usuário não econtrado.')
     }
 
-    currentUser.amount += obrigado.value
-    receiverUser.amount -= obrigado.value
+    currentUser.amount += affirmation.value
+    receiverUser.amount -= affirmation.value
 
     currentUser.save()
     receiverUser.save()
 
-    await obrigado.delete()
+    await affirmation.delete()
   }
 }

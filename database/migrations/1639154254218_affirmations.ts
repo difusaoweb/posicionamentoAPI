@@ -1,14 +1,12 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 
-export default class Obrigados extends BaseSchema {
-  protected tableName = 'obrigados'
+export default class Affirmations extends BaseSchema {
+  protected tableName = 'affirmations'
 
   public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
-      table.integer('sender_id').notNullable()
-      table.integer('receiver_id').notNullable()
-      table.integer('value').notNullable().defaultTo(0)
+      table.string('message').nullable()
 
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL
