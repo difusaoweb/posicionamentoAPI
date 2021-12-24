@@ -1,9 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
-import Env from '@ioc:Adonis/Core/Env'
 
 import User from 'App/Models/User'
-import Obrigado from 'App/Models/Obrigado'
 
 export default class UsersController {
   public async index() {
@@ -36,24 +34,6 @@ export default class UsersController {
       userPass: requestBody.user_pass,
       userEmail: requestBody.user_email,
       displayName: requestBody.display_name,
-    })
-
-    const obrigadoUser = await User.findByOrFail(
-      'user_login',
-      Env.get('BUSINESS_ACCOUNT_USER_NAME')
-    )
-
-    obrigadoUser.amount -= 3
-    user.amount += 3
-
-    obrigadoUser.save()
-    user.save()
-
-    await Obrigado.create({
-      senderId: obrigadoUser.id,
-      receiverId: user.id,
-      value: 3,
-      message: 'Muito obrigado por vir para nossa plataforma!',
     })
 
     return user

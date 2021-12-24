@@ -22,7 +22,7 @@ export default class AccessController {
 
     const token = await auth.use('api').generate(user, {
       name: user?.serialize().displayName,
-      expiresIn: '7days',
+      expiresIn: '7days'
     })
 
     return token
@@ -31,7 +31,7 @@ export default class AccessController {
   public async logout({ auth }: HttpContextContract) {
     await auth.use('api').revoke()
     return {
-      revoked: true,
+      revoked: true
     }
   }
 
