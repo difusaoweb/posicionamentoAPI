@@ -34,6 +34,8 @@ export default class User extends BaseModel {
     }
   }
 
-  @hasMany(() => Opinion)
+  @hasMany(() => Opinion, {
+    foreignKey: 'opinion_author',
+  })
   public opinions: HasMany<typeof Opinion>
 }

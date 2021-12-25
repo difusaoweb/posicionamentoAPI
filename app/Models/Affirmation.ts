@@ -1,19 +1,12 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, BelongsTo } from '@ioc:Adonis/Lucid/Orm'
-import User from 'App/Models/User'
+import { BaseModel, column, hasMany, HasMany } from '@ioc:Adonis/Lucid/Orm'
+
+import Opinion from 'App/Models/Opinion'
+
 
 export default class Affirmation extends BaseModel {
   @column({ isPrimary: true })
   public id: number
-
-  @column()
-  public senderId: number
-
-  @column()
-  public receiverId: number
-
-  @column()
-  public value: number
 
   @column()
   public message: string
@@ -24,6 +17,8 @@ export default class Affirmation extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>
+  @hasMany(() => Opinion, {
+    foreignKey: 'affirmation_parent',
+  })
+  public opinions: HasMany<typeof Opinion>
 }

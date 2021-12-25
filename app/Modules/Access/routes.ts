@@ -7,7 +7,7 @@ Route.group(() => {
     Route.delete('/access', 'AccessController.logout')
   }).middleware('auth')
 
-  Route.put('/access/resetpassword', 'AccessController.resetpassword')
+  // Route.put('/access/resetpassword', 'AccessController.resetpassword')
 
-  Route.put('/access/changepassword', 'AccessController.changepassword')
+  // Route.put('/access/changepassword', 'AccessController.changepassword')
 }).prefix('/v1')

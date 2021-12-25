@@ -1,22 +1,25 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo, BelongsTo } from '@ioc:Adonis/Lucid/Orm'
+
 import User from 'App/Models/User'
+import Affirmation from 'App/Models/Affirmation'
+
 
 export default class Opinion extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
   @column()
-  public senderId: number
+  public opinion_author: number
 
   @column()
-  public receiverId: number
+  public evaluation: number
 
   @column()
-  public value: number
+  public affirmation_parent: number
 
   @column()
-  public message: string
+  public opinion_parent: number
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
@@ -26,4 +29,10 @@ export default class Opinion extends BaseModel {
 
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>
+
+  @belongsTo(() => Affirmation)
+  public affirmation: BelongsTo<typeof Affirmation>
+
+  @belongsTo(() => Opinion)
+  public opinion: BelongsTo<typeof Opinion>
 }
