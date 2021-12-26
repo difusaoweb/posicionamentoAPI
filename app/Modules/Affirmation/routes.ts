@@ -6,6 +6,9 @@ Route.group(() => {
   // Get all Affirmations
   Route.get('/affirmations', 'AffirmationsController.index')
 
+  // Home - Get all Affirmations
+  Route.get('/affirmations/home', 'AffirmationsController.indexHome')
+
   // Get single Affirmation
   Route.get('/affirmations/:id?', 'AffirmationsController.show').where('id', {
     match: /^[0-9]+$/,

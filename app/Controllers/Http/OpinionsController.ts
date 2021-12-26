@@ -22,7 +22,11 @@ export default class OpinionsController {
 
   public async store({ request, auth, response }: HttpContextContract) {
     const newSchema = schema.create({
-      evaluation: schema.number(),
+      strongly_agree: schema.number.optional(),
+      agree: schema.number.optional(),
+      neutral: schema.number.optional(),
+      disagree: schema.number.optional(),
+      strongly_disagree: schema.number.optional(),
       affirmation_parent: schema.number.optional(),
       opinion_parent: schema.number.optional()
     })
@@ -33,7 +37,11 @@ export default class OpinionsController {
 
     const opinion = await Opinion.create({
       opinionAuthor: currentUserId,
-      evaluation: requestBody.evaluation,
+      stronglyAgree: requestBody.strongly_agree ?? null,
+      agree: requestBody.agree ?? null,
+      neutral: requestBody.neutral ?? null,
+      disagree: requestBody.disagree ?? null,
+      stronglyDisagree: requestBody.strongly_disagree ?? null,
       affirmationParent: requestBody.affirmation_parent ?? null,
       opinionParent: requestBody.opinion_parent ?? null
     })

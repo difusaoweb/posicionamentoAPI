@@ -18,7 +18,7 @@ export default class Affirmation extends BaseModel {
   public updatedAt: DateTime
 
   @hasMany(() => Opinion, {
-    foreignKey: 'affirmation_parent',
+    foreignKey: 'affirmationParent',
   })
   public opinions: HasMany<typeof Opinion>
 }

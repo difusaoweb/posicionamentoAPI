@@ -13,7 +13,19 @@ export default class Opinion extends BaseModel {
   public opinionAuthor: number
 
   @column()
-  public evaluation: number
+  public stronglyAgree: number | null
+
+  @column()
+  public agree: number | null
+
+  @column()
+  public neutral: number | null
+
+  @column()
+  public disagree: number | null
+
+  @column()
+  public stronglyDisagree: number | null
 
   @column()
   public affirmationParent: number | null
@@ -35,6 +47,8 @@ export default class Opinion extends BaseModel {
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>
 
-  @belongsTo(() => Affirmation)
-  public affirmation: BelongsTo<typeof Affirmation>
+  @hasMany(() => Affirmation, {
+    foreignKey: 'opinion_parent',
+  })
+  public affirmation: HasMany<typeof Affirmation>
 }
