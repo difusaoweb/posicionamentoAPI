@@ -1,19 +1,19 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
+  // Get all users
+  Route.get('/users', 'UsersController.index')
+
+  // Get single user
+  Route.get('/users/:id?', 'UsersController.show').where('id', {
+    match: /^[0-9]+$/,
+    cast: (id) => Number(id),
+  })
+
   // Create user
   Route.post('/users', 'UsersController.store')
 
   Route.group(() => {
-    // Get all users
-    Route.get('/users', 'UsersController.index')
-
-    // Get single user
-    Route.get('/users/:id?', 'UsersController.show').where('id', {
-      match: /^[0-9]+$/,
-      cast: (id) => Number(id),
-    })
-
     // Update user
     Route.put('/users/:id?', 'UsersController.update').where('id', {
       match: /^[0-9]+$/,
