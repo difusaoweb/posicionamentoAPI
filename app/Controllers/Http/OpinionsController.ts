@@ -23,8 +23,8 @@ export default class OpinionsController {
   public async store({ request, auth, response }: HttpContextContract) {
     const newSchema = schema.create({
       evaluation: schema.number(),
-      affirmation_parent: schema.number.nullable(),
-      opinion_parent: schema.number.nullable()
+      affirmation_parent: schema.number.optional(),
+      opinion_parent: schema.number.optional()
     })
     const requestBody = await request.validate({ schema: newSchema })
 
@@ -34,8 +34,8 @@ export default class OpinionsController {
     const opinion = await Opinion.create({
       opinionAuthor: currentUserId,
       evaluation: requestBody.evaluation,
-      affirmationParent: requestBody.affirmation_parent,
-      opinionParent: requestBody.opinion_parent
+      affirmationParent: requestBody.affirmation_parent ?? null,
+      opinionParent: requestBody.opinion_parent ?? null
     })
 
     return opinion
