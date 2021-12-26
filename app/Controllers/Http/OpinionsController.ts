@@ -20,7 +20,7 @@ export default class OpinionsController {
     return opinion
   }
 
-  public async store({ request }: HttpContextContract) {
+  public async store({ request, auth, response }: HttpContextContract) {
     const newSchema = schema.create({
       evaluation: schema.number(),
       affirmation_parent: schema.number.nullable(),
