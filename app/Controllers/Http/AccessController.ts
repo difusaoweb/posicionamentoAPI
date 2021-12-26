@@ -55,19 +55,17 @@ export default class AccessController {
     }
   }
 
-  public async resetpassword({ auth, request, response }: HttpContextContract) {
-    const newSchema = schema.create({
-      user_email: schema.string()
-    })
-    const requestBody = await request.validate({ schema: newSchema })
+  // public async resetpassword({ auth, request, response }: HttpContextContract) {
+  //   const newSchema = schema.create({
+  //     user_email: schema.string()
+  //   })
+  //   const requestBody = await request.validate({ schema: newSchema })
 
-    const user = await User.findByOrFail('user_email', requestBody.user_email)
-    if (!user) {
-      return response.abort('User not found', 404)
-    }
-
-
-  }
+  //   const user = await User.findByOrFail('user_email', requestBody.user_email)
+  //   if (!user) {
+  //     return response.abort('User not found', 404)
+  //   }
+  // }
 
   // public async changepassword({ auth, request, response }: HttpContextContract) { }
 }
