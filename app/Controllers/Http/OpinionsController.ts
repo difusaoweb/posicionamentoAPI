@@ -23,8 +23,8 @@ export default class OpinionsController {
   public async store({ request }: HttpContextContract) {
     const newSchema = schema.create({
       evaluation: schema.number(),
-      affirmation_parent: schema.string.nullable(),
-      opinion_parent: schema.string.nullable()
+      affirmation_parent: schema.number.nullable(),
+      opinion_parent: schema.number.nullable()
     })
     const requestBody = await request.validate({ schema: newSchema })
 
