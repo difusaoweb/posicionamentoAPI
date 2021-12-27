@@ -14,26 +14,19 @@ export default class AffirmationsController {
   public async indexHome() {
     const request = await Database
     .from('opinions')
-    .select('id', 'affirmation_parent', 'evaluation',
-      Database.from('affirmations')
-      .select('message')
-      .whereColumn('affirmations.id', 'opinions.affirmation_parent')
-      .as('affirmation_message')
-    )
-    console.log(request)
+    .select('affirmations.id', 'affirmations.message')
+    .count({
+      'strongly_agree': 'strongly_agree',
+      'agree': 'agree',
+      'neutral': 'neutral',
+      'disagree': 'disagree',
+      'strongly_disagree': 'strongly_disagree'
+    })
+    .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
+    .whereNotNull('affirmation_parent')
+    .groupBy('affirmations.id')
 
-
-    // affirmations.map((affirmation) => {
-    //   console.log(affirmation.opinions)
-    //   unset(affirmation.createdAt)
-    //   return affirmation
-    // })
-    // opinions.forEach((affirmation) => {
-    //   console.log(affirmation.opinions)
-    // })
-
-
-    return []
+    return request
   }
 
   public async show({ request, response }: HttpContextContract) {
