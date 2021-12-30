@@ -11,24 +11,6 @@ export default class AffirmationsController {
     return all
   }
 
-  public async indexHome() {
-    const request = await Database
-    .from('opinions')
-    .select('affirmations.id', 'affirmations.message')
-    .count({
-      'strongly_agree': 'strongly_agree',
-      'agree': 'agree',
-      'neutral': 'neutral',
-      'disagree': 'disagree',
-      'strongly_disagree': 'strongly_disagree'
-    })
-    .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
-    .whereNotNull('affirmation_parent')
-    .groupBy('affirmations.id')
-
-    return request
-  }
-
   public async show({ request, response }: HttpContextContract) {
     const affirmationId: number = request.param('id')
     const affirmation = await Affirmation.findOrFail(affirmationId)
@@ -50,5 +32,37 @@ export default class AffirmationsController {
     })
 
     return affirmation
+  }
+
+  public async indexHome() {
+    const request = await Database
+    .from('opinions')
+    .select('affirmations.id', 'affirmations.message')
+    .count({
+      'strongly_agree': 'strongly_agree',
+      'agree': 'agree',
+      'neutral': 'neutral',
+      'disagree': 'disagree',
+      'strongly_disagree': 'strongly_disagree'
+    })
+    .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
+    .whereNotNull('affirmation_parent')
+    .groupBy('affirmations.id')
+
+    return request
+  }
+
+  public async search({ request, response }: HttpContextContract) {
+    const newSchema = schema.create({
+      search: schema.string()
+    })
+    const requestBody = await request.validate({ schema: newSchema })
+
+    const requestDb = await Database
+    .from('affirmations')
+    .select('*')
+    .where('message', 'like', '%'+ requestBody.search +'%')
+
+    return requestDb
   }
 }

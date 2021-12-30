@@ -15,6 +15,9 @@ Route.group(() => {
     cast: (id) => Number(id),
   })
 
+  // Search - Get Affirmation
+  Route.post('/affirmations/search', 'AffirmationsController.search')
+
   Route.group(() => {
     // Create affirmation
     Route.post('/affirmations', 'AffirmationsController.store')
