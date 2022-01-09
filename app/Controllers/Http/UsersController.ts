@@ -25,18 +25,20 @@ export default class UsersController {
       user_login: schema.string(),
       user_pass: schema.string(),
       user_email: schema.string(),
-      display_name: schema.string(),
+      display_name: schema.string()
     })
     const requestBody = await request.validate({ schema: newSchema })
 
-    const user = await User.create({
+    await User.create({
       userLogin: requestBody.user_login,
       userPass: requestBody.user_pass,
       userEmail: requestBody.user_email,
       displayName: requestBody.display_name,
     })
 
-    return user
+    return {
+      created: true
+    }
   }
 
   public async update({ request, response }: HttpContextContract) {
