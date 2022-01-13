@@ -19,16 +19,18 @@ export default class AccessController {
     .orWhere((query) => {
       query.where('user_login', requestBody.user_login)
     })
-    if (!users[0]) {
-      return response.abort('User not found', 404)
-    }
 
-    const user = await User.findOrFail(users[0].id)
-    if (!user) {
-      return response.abort('User not found', 404)
+    if (!users[0]) {
+      response.send({ error: 'Usuário não encontrado' })
+      response.status(404)
+      return response
     }
+    const user = await User.findOrFail(users[0].id)
+
     if (!(await Hash.verify(user.userPass, requestBody.user_pass))) {
-      return response.badRequest('Invalid password')
+      response.send({ error: 'Senha incorreta' })
+      response.status(403)
+      return response
     }
 
     const token = await auth.use('api').generate(user, {
