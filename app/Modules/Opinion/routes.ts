@@ -9,7 +9,19 @@ Route.group(() => {
   // Get single Opinion
   Route.get('/opinions/:id?', 'OpinionsController.show').where('id', {
     match: /^[0-9]+$/,
-    cast: (id) => Number(id),
+    cast: (id) => Number(id)
+  })
+
+  // Get all Opinions from Author
+  Route.get('/opinions/author/:id?', 'OpinionsController.author').where('id', {
+    match: /^[0-9]+$/,
+    cast: (id) => Number(id)
+  })
+
+  // Get all Opinions from Affirmation
+  Route.get('/opinions/affirmation/:id?', 'OpinionsController.affirmation').where('id', {
+    match: /^[0-9]+$/,
+    cast: (id) => Number(id)
   })
 
   Route.group(() => {

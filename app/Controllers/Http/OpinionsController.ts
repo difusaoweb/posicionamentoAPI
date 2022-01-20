@@ -1,5 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
+import Database from '@ioc:Adonis/Lucid/Database'
 
 import Opinion from 'App/Models/Opinion'
 
@@ -8,6 +9,43 @@ export default class OpinionsController {
     const all = await Opinion.all()
 
     return all
+  }
+
+  public async author({ request, response }: HttpContextContract) {
+    const authorId: number = request.param('id')
+
+    const responseDb = await Database.
+      from('opinions').
+      select(
+        'id',
+        'affirmation_parent',
+        Database.
+          from('affirmations').
+          select('message').
+          whereColumn('opinions.affirmation_parent', 'affirmations.id').
+          as('affirmation_message'),
+        'strongly_agree',
+        'agree',
+        'neutral',
+        'disagree',
+        'strongly_disagree'
+      ).
+      whereNotNull('affirmation_parent').
+      where('opinion_author', authorId)
+
+    return responseDb
+  }
+
+  public async affirmation({ request, response }: HttpContextContract) {
+    const affirmationId: number = request.param('id')
+
+    const responseDb = await Database.
+      from('opinions').
+      select('*').
+      whereNotNull('affirmation_parent').
+      where('affirmation_parent', affirmationId)
+
+    return responseDb
   }
 
   public async show({ request, response }: HttpContextContract) {
