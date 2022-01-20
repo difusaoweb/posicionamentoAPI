@@ -3,6 +3,7 @@ import Hash from '@ioc:Adonis/Core/Hash'
 import { BaseModel, column, beforeSave, hasMany, HasMany } from '@ioc:Adonis/Lucid/Orm'
 
 import Opinion from 'App/Models/Opinion'
+import Usermeta from 'App/Models/Usermeta'
 
 
 export default class User extends BaseModel {
@@ -27,6 +28,7 @@ export default class User extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
+
   @beforeSave()
   public static async hashPassword(user: User) {
     if (user.$dirty.userPass) {
@@ -38,4 +40,7 @@ export default class User extends BaseModel {
     foreignKey: 'opinion_author',
   })
   public opinions: HasMany<typeof Opinion>
+
+  @hasMany(() => Usermeta)
+  public metas: HasMany<typeof Usermeta>
 }
