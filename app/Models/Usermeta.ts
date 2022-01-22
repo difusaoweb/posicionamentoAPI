@@ -2,6 +2,8 @@ import { DateTime } from 'luxon'
 import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 
 export default class Usermeta extends BaseModel {
+  public static table = 'usermeta'
+
   @column({ isPrimary: true })
   public metaId: number
 
