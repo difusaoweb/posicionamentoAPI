@@ -2,8 +2,12 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 
 import User from 'App/Models/User'
+import { getUsermetaAll } from 'App/Controllers/Http/UsermetaController'
 
 export default class UsersController {
+
+
+
   public async index() {
     const all = await User.all()
 
@@ -18,6 +22,46 @@ export default class UsersController {
     }
 
     return user
+  }
+
+
+  public async profile({ request, response }: HttpContextContract) {
+    const qs = request.qs()
+    if(!(!!qs.user_id)) {
+      response.send({ error: 'falta de dados' })
+      response.status(500)
+      return response
+    }
+    const userId = parseInt(qs.user_id)
+
+    const user = await User.findOrFail(userId)
+    if (!user) {
+      response.send({ error: 'Usuário não econtrado.' })
+      response.status(404)
+      return response
+    }
+
+    const userMetas = await getUsermetaAll({ userId })
+
+    let avatarMeta: string | null = null
+    let titleMeta: string | null = null
+    let followersMeta: number | null = null
+    let descriptionMeta: string | null = null
+    if(!!userMetas) {
+      avatarMeta = userMetas['avatar']
+      titleMeta = userMetas['title']
+      followersMeta = parseInt(userMetas['followers'])
+      descriptionMeta = userMetas['description']
+    }
+
+    return {
+      userLogin: user.userLogin,
+      displayName: user.displayName,
+      avatar: avatarMeta,
+      title: titleMeta,
+      followers: followersMeta,
+      description: descriptionMeta
+    }
   }
 
   public async store({ request }: HttpContextContract) {
@@ -56,7 +100,12 @@ export default class UsersController {
     })
     const requestBody = await request.validate({ schema: newSchema })
 
-    let userObj = {}
+    let userObj = {
+      userLogin: user.userLogin,
+      userEmail: user.userEmail,
+      displayName: user.displayName,
+      userPass: user.userPass
+    }
 
     //userLogin
     if (requestBody.user_login) {
