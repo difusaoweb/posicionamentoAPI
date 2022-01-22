@@ -13,6 +13,9 @@ Route.group(() => {
   // Create user
   Route.post('/users', 'UsersController.store')
 
+  // Get user profile
+  Route.get('/users/profile', 'UsersController.profile')
+
   Route.group(() => {
     // Update user
     Route.put('/users/:id?', 'UsersController.update').where('id', {
