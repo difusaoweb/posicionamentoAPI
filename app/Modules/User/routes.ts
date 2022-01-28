@@ -11,7 +11,7 @@ Route.group(() => {
   })
 
   // Create user
-  Route.post('/users', 'UsersController.store')
+  Route.get('/users/create', 'UsersController.addUserM')
 
   // Get user profile
   Route.get('/users/profile', 'UsersController.profile')

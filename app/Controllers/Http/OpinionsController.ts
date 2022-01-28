@@ -3,16 +3,18 @@ import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 
 import Opinion from 'App/Models/Opinion'
+import User from 'App/Models/User'
 
 export default class OpinionsController {
-  public async index() {
-    const all = await Opinion.all()
 
-    return all
-  }
-
-  public async author({ request, response }: HttpContextContract) {
-    const authorId: number = request.param('id')
+  public async user({ request, response }: HttpContextContract) {
+    const qs = request.qs()
+    if(!(!!qs.user_id)) {
+      response.send({ error: 'falta de dados' })
+      response.status(500)
+      return response
+    }
+    const userId = parseInt(qs.user_id)
 
     const responseDb = await Database.
       from('opinions').
@@ -31,21 +33,61 @@ export default class OpinionsController {
         'strongly_disagree'
       ).
       whereNotNull('affirmation_parent').
-      where('opinion_author', authorId)
+      where('opinion_author', userId)
 
     return responseDb
   }
 
   public async affirmation({ request, response }: HttpContextContract) {
-    const affirmationId: number = request.param('id')
+    try {
+      const qs = request.qs()
+      if(!(!!qs.affirmation_id)) {
+        response.send({ error: 'falta de dados' })
+        response.status(500)
+        return response
+      }
+      const affirmationId = parseInt(qs.affirmation_id)
 
-    const responseDb = await Database.
-      from('opinions').
-      select('*').
-      whereNotNull('affirmation_parent').
-      where('affirmation_parent', affirmationId)
+      const responseDb = await Database.
+        from((subquery) => {
+          subquery.from('opinions').
+          select(
+            'id',
+            'opinion_author',
+            'neutral',
+            'disagree',
+            'agree',
+            'strongly_agree',
+            'strongly_disagree'
+          ).
+          where('affirmation_parent', affirmationId).
+          as('opinions_db')
+        }).
+        select(
+          'opinions_db.*',
+          'user_login',
+          'usermeta.meta_value as avatar'
+        ).
+        leftJoin('users', 'users.id', '=', 'opinions_db.opinion_author').
+        leftJoin('usermeta', 'usermeta.user_id', '=', 'users.id').
+        where('usermeta.meta_key', 'avatar')
 
-    return responseDb
+      response.send({ success: { opinions: responseDb } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error ao pegas as afirmações da home.' } })
+      response.status(500)
+      return response
+    }
+  }
+
+
+  public async index() {
+    const all = await Opinion.all()
+
+    return all
   }
 
   public async show({ request, response }: HttpContextContract) {
@@ -58,28 +100,52 @@ export default class OpinionsController {
     return opinion
   }
 
-  public async store({ request, auth, response }: HttpContextContract) {
-    const newSchema = schema.create({
-      opinion_type: schema.string(),
-      affirmation_parent: schema.number.optional(),
-      opinion_parent: schema.number.optional()
-    })
-    const requestBody = await request.validate({ schema: newSchema })
+  public async addOrCreate({ request, auth, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if(!(!!qs.affirmation_id || !!qs.avaliation_value)) {
+        response.send({ error: 'falta de dados' })
+        response.status(500)
+        return response
+      }
+      const affirmationId = parseInt(qs.affirmation_id)
+      const avaliationValue = parseFloat(qs.avaliation_value)
 
-    await auth.use('api').authenticate()
-    const currentUserId: number = auth.use('api').user.id
+      await auth.use('api').authenticate()
+      const currentUserId: number = auth.use('api').user.id
 
-    const opinion = await Opinion.create({
-      opinionAuthor: currentUserId,
-      stronglyAgree: (requestBody.opinion_type == 'stronglyAgree') ? 1 : null,
-      agree: (requestBody.opinion_type == 'agree') ? 1 : null,
-      neutral: (requestBody.opinion_type == 'neutral') ? 1 : null,
-      disagree: (requestBody.opinion_type == 'disagree') ? 1 : null,
-      stronglyDisagree: (requestBody.opinion_type == 'stronglyDisagree') ? 1 : null,
-      affirmationParent: requestBody.affirmation_parent ?? null,
-      opinionParent: requestBody.opinion_parent ?? null
-    })
+      const obj = {
+        opinionAuthor: currentUserId,
+        affirmationParent: affirmationId,
+        stronglyAgree: (avaliationValue == 1) ? 1 : null,
+        agree: (avaliationValue == 0.5) ? 1 : null,
+        neutral: (avaliationValue == 0) ? 1 : null,
+        disagree: (avaliationValue == -0.5) ? 1 : null,
+        stronglyDisagree: (avaliationValue == -1) ? 1 : null,
+      }
 
-    return opinion
+      const responseDb = await Database.
+        from('opinions').
+        select('id').
+        where('opinion_author', currentUserId).
+        where('affirmation_parent', affirmationId)
+
+      let opinionId = 0
+      if(!!responseDb) {
+        opinionId = parseInt(responseDb[0]?.id)
+      }
+
+      const opinion = await Opinion.updateOrCreate({ id: opinionId }, obj)
+
+      response.send({ success: { opinion_id: opinion.id }})
+      response.status(200)
+      return response
+      return null
+    }
+    catch (error) {
+      response.send({ error: error })
+      response.status(500)
+      return response
+    }
   }
 }

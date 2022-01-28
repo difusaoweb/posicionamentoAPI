@@ -12,21 +12,15 @@ Route.group(() => {
     cast: (id) => Number(id)
   })
 
-  // Get all Opinions from Author
-  Route.get('/opinions/author/:id?', 'OpinionsController.author').where('id', {
-    match: /^[0-9]+$/,
-    cast: (id) => Number(id)
-  })
+  // Get all Opinions from user
+  Route.get('/opinions/user', 'OpinionsController.user')
 
   // Get all Opinions from Affirmation
-  Route.get('/opinions/affirmation/:id?', 'OpinionsController.affirmation').where('id', {
-    match: /^[0-9]+$/,
-    cast: (id) => Number(id)
-  })
+  Route.get('/opinions/affirmation', 'OpinionsController.affirmation')
 
   Route.group(() => {
     // Create opinion
-    Route.post('/opinions', 'OpinionsController.store')
+    Route.get('/opinions/create', 'OpinionsController.addOrCreate')
 
     // // Remove opinion
     // Route.delete('/opinions/:id?', 'OpinionsController.destroy').where('id', {

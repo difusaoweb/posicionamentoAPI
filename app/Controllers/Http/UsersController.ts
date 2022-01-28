@@ -1,5 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
+import Database from '@ioc:Adonis/Lucid/Database'
 
 import User from 'App/Models/User'
 import { getUsermetaAll } from 'App/Controllers/Http/UsermetaController'
@@ -48,10 +49,10 @@ export default class UsersController {
     let followersMeta: number | null = null
     let descriptionMeta: string | null = null
     if(!!userMetas) {
-      avatarMeta = userMetas['avatar']
-      titleMeta = userMetas['title']
-      followersMeta = parseInt(userMetas['followers'])
-      descriptionMeta = userMetas['description']
+      avatarMeta = userMetas['avatar'] ?? null
+      titleMeta = userMetas['title'] ?? null
+      followersMeta = parseInt(userMetas['followers']) ?? null
+      descriptionMeta = userMetas['description'] ?? null
     }
 
     return {
@@ -64,24 +65,52 @@ export default class UsersController {
     }
   }
 
-  public async store({ request }: HttpContextContract) {
-    const newSchema = schema.create({
-      user_login: schema.string(),
-      user_pass: schema.string(),
-      user_email: schema.string(),
-      display_name: schema.string()
-    })
-    const requestBody = await request.validate({ schema: newSchema })
+  public async addUserM({ request, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if(
+        !(!!qs?.user_login) ||
+        !(!!qs?.user_pass) ||
+        !(!!qs?.user_email) ||
+        !(!!qs?.display_name)
+      ) {
+        response.send({ failure: { message: 'Falta de dados.' }})
+        response.status(500)
+        return response
+      }
 
-    await User.create({
-      userLogin: requestBody.user_login,
-      userPass: requestBody.user_pass,
-      userEmail: requestBody.user_email,
-      displayName: requestBody.display_name,
-    })
+      const userLogin = String(qs.user_login)
+      const userPass = String(qs.user_pass)
+      const userEmail = String(qs.user_email)
+      const displayName = String(qs.display_name)
 
-    return {
-      created: true
+      const responseDb = await Database.
+        from('users').
+        select('id').
+        where('user_login', userLogin).
+        where('user_email', userEmail)
+
+      if(!!responseDb[0]?.id) {
+        response.send({ failure: { message: 'Usuário já existe.' }})
+        response.status(500)
+        return response
+      }
+
+      const user = await User.create({
+        userLogin,
+        userPass,
+        userEmail,
+        displayName
+      })
+
+      response.send({ success: { user_id: user.id } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error ao criar o usuário.' } })
+      response.status(500)
+      return response
     }
   }
 

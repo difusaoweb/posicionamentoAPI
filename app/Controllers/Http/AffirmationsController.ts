@@ -34,22 +34,31 @@ export default class AffirmationsController {
     return affirmation
   }
 
-  public async indexHome() {
-    const request = await Database
-    .from('opinions')
-    .select('affirmations.id', 'affirmations.message')
-    .count({
-      'strongly_agree': 'strongly_agree',
-      'agree': 'agree',
-      'neutral': 'neutral',
-      'disagree': 'disagree',
-      'strongly_disagree': 'strongly_disagree'
-    })
-    .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
-    .whereNotNull('affirmation_parent')
-    .groupBy('affirmations.id')
+  public async home({ request, response }: HttpContextContract) {
+    try {
+      const responseDb = await Database
+        .from('opinions')
+        .select('affirmations.id', 'affirmations.message')
+        .count({
+          'strongly_agree': 'strongly_agree',
+          'agree': 'agree',
+          'neutral': 'neutral',
+          'disagree': 'disagree',
+          'strongly_disagree': 'strongly_disagree'
+        })
+        .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
+        .whereNotNull('affirmation_parent')
+        .groupBy('affirmations.id')
 
-    return request
+      response.send({ success: { affirmations: responseDb } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error ao pegas as afirmações da home.' } })
+      response.status(500)
+      return response
+    }
   }
 
   public async search({ request, response }: HttpContextContract) {

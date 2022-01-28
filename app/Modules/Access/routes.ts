@@ -1,10 +1,13 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
-  Route.post('/access', 'AccessController.login')
+  Route.get('/access', 'AccessController.login')
 
   Route.group(() => {
-    Route.delete('/access', 'AccessController.logout')
+
+    Route.get('/access/authenticated', 'AccessController.checkAuthenticated')
+
+    Route.get('/access/delete', 'AccessController.logout')
   }).middleware('auth')
 
   // Route.put('/access/resetpassword', 'AccessController.resetpassword')
