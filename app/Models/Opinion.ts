@@ -13,19 +13,7 @@ export default class Opinion extends BaseModel {
   public opinionAuthor: number
 
   @column()
-  public stronglyAgree: number | null
-
-  @column()
-  public agree: number | null
-
-  @column()
-  public neutral: number | null
-
-  @column()
-  public disagree: number | null
-
-  @column()
-  public stronglyDisagree: number | null
+  public opinionAvaliation: number
 
   @column()
   public affirmationParent: number | null

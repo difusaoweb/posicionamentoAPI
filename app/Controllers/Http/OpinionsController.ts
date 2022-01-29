@@ -50,18 +50,15 @@ export default class OpinionsController {
 
       const responseDb = await Database.
         from((subquery) => {
-          subquery.from('opinions').
-          select(
-            'id',
-            'opinion_author',
-            'neutral',
-            'disagree',
-            'agree',
-            'strongly_agree',
-            'strongly_disagree'
-          ).
-          where('affirmation_parent', affirmationId).
-          as('opinions_db')
+          subquery.
+            from('opinions').
+            select(
+              'id',
+              'opinion_author',
+              'opinion_avaliation'
+            ).
+            where('affirmation_parent', affirmationId).
+            as('opinions_db')
         }).
         select(
           'opinions_db.*',
@@ -70,7 +67,12 @@ export default class OpinionsController {
         ).
         leftJoin('users', 'users.id', '=', 'opinions_db.opinion_author').
         leftJoin('usermeta', 'usermeta.user_id', '=', 'users.id').
-        where('usermeta.meta_key', 'avatar')
+        where((query) => {
+          query.where('usermeta.meta_key', 'avatar')
+        }).
+        orWhere((query) => {
+          query.whereNull('usermeta.meta_key')
+        })
 
       response.send({ success: { opinions: responseDb } })
       response.status(200)
@@ -100,7 +102,7 @@ export default class OpinionsController {
     return opinion
   }
 
-  public async addOrCreate({ request, auth, response }: HttpContextContract) {
+  public async addOrUpdate({ request, auth, response }: HttpContextContract) {
     try {
       const qs = request.qs()
       if(!(!!qs.affirmation_id || !!qs.avaliation_value)) {
@@ -117,11 +119,7 @@ export default class OpinionsController {
       const obj = {
         opinionAuthor: currentUserId,
         affirmationParent: affirmationId,
-        stronglyAgree: (avaliationValue == 1) ? 1 : null,
-        agree: (avaliationValue == 0.5) ? 1 : null,
-        neutral: (avaliationValue == 0) ? 1 : null,
-        disagree: (avaliationValue == -0.5) ? 1 : null,
-        stronglyDisagree: (avaliationValue == -1) ? 1 : null,
+        opinionAvaliation: avaliationValue
       }
 
       const responseDb = await Database.
@@ -140,10 +138,9 @@ export default class OpinionsController {
       response.send({ success: { opinion_id: opinion.id }})
       response.status(200)
       return response
-      return null
     }
     catch (error) {
-      response.send({ error: error })
+      response.send({ failure: { message: 'Erro ao atualizar ou criar a opinião.' } })
       response.status(500)
       return response
     }

@@ -20,7 +20,7 @@ Route.group(() => {
 
   Route.group(() => {
     // Create opinion
-    Route.get('/opinions/create', 'OpinionsController.addOrCreate')
+    Route.get('/opinions/create', 'OpinionsController.addOrUpdate')
 
     // // Remove opinion
     // Route.delete('/opinions/:id?', 'OpinionsController.destroy').where('id', {
