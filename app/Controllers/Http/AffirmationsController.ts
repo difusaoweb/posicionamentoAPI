@@ -34,27 +34,39 @@ export default class AffirmationsController {
     return affirmation
   }
 
-  public async home({ request, response }: HttpContextContract) {
+  public async home({ auth, request, response }: HttpContextContract) {
     try {
-      const responseDb = await Database
-        .from('opinions')
-        .select('affirmations.id', 'affirmations.message')
-        .count({
-          'strongly_agree': 'strongly_agree',
-          'agree': 'agree',
-          'neutral': 'neutral',
-          'disagree': 'disagree',
-          'strongly_disagree': 'strongly_disagree'
-        })
-        .leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id')
-        .whereNotNull('affirmation_parent')
-        .groupBy('affirmations.id')
+      let currentUserId: number = 0
+      if(await auth.use('api').check()) {
+        await auth.use('api').authenticate()
+        currentUserId = auth.use('api').user.id
+      }
+
+      const responseDb = await Database.
+        from('opinions').
+        select(
+          'affirmations.id',
+          'affirmations.message',
+          Database.raw(`
+            COUNT(case when opinions.opinion_avaliation = 1 then 1 end) as strongly_agree,
+            COUNT(case when opinions.opinion_avaliation = 0.5 then 0.5 end) as agree,
+            COUNT(case when opinions.opinion_avaliation = 0 then 0 end) as neutral,
+            COUNT(case when opinions.opinion_avaliation = -0.5 then -0.5 end) as disagree,
+            COUNT(case when opinions.opinion_avaliation = -1 then -1 end) as strongly_disagree,
+            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_avaliation end) as opinion_avaliation`, {
+              opinionAuthor: currentUserId
+            }
+          )
+        ).
+        leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id').
+        groupBy('affirmations.id')
 
       response.send({ success: { affirmations: responseDb } })
       response.status(200)
       return response
     }
     catch (error) {
+      console.log(error?.responseText)
       response.send({ failure: { message: 'Error ao pegas as afirmações da home.' } })
       response.status(500)
       return response
