@@ -12,20 +12,21 @@ Route.group(() => {
     cast: (id) => Number(id)
   })
 
-  // Get all Opinions from user
-  Route.get('/opinions/user', 'OpinionsController.user')
-
-  // Get all Opinions from Affirmation
-  Route.get('/opinions/affirmation', 'OpinionsController.affirmation')
-
   Route.group(() => {
-    // Create opinion
-    Route.get('/opinions/create', 'OpinionsController.addOrUpdate')
-
     // // Remove opinion
     // Route.delete('/opinions/:id?', 'OpinionsController.destroy').where('id', {
     //   match: /^[0-9]+$/,
     //   cast: (id) => Number(id),
     // })
+
+
+    // Post or put opinion from affirmation
+    Route.get('/opinions/create', 'OpinionsController.addOrUpdate')
   }).middleware('auth')
+
+  // Get opinions from user
+  Route.get('/opinions/user', 'OpinionsController.user')
+
+  // Get opinions from affirmation
+  Route.get('/opinions/affirmation', 'OpinionsController.affirmation')
 }).prefix('/v1')
