@@ -14,7 +14,7 @@ export default class AccessController {
         !(!!qs?.user_login) ||
         !(!!qs?.user_pass)
       ) {
-        response.send({ failure: { message: 'Falta de dados.' }})
+        response.send({ failure: { message: 'Lack of data' }})
         response.status(500)
         return response
       }
@@ -33,14 +33,14 @@ export default class AccessController {
         })
 
       if(!(!!users[0]?.id)) {
-        response.send({ failure: { message: 'Usuário não encontrado.' }})
+        response.send({ failure: { message: 'User not found' }})
         response.status(404)
         return response
       }
       const user = await User.findOrFail(users[0].id)
 
       if (!(await Hash.verify(user.userPass, userPass))) {
-        response.send({ failure: { message: 'Senha incorreta.' }})
+        response.send({ failure: { message: 'Incorrect password' }})
         response.status(403)
         return response
       }
@@ -50,18 +50,18 @@ export default class AccessController {
         expiresIn: '7days'
       })
 
-      const usermeta = await getUsermetaAll({ userId: user.id })
+      // const usermeta = await getUsermetaAll({ userId: user.id })
 
-      let avatarMeta: string | null = null
-      let titleMeta: string | null = null
-      let followersMeta: number | null = null
-      let descriptionMeta: string | null = null
-      if(!!usermeta) {
-        avatarMeta = usermeta['avatar'] ?? null
-        titleMeta = usermeta['title'] ?? null
-        followersMeta = parseInt(usermeta['followers']) ?? null
-        descriptionMeta = usermeta['description'] ?? null
-      }
+      // let avatarMeta: string | null = null
+      // let titleMeta: string | null = null
+      // let followersMeta: number | null = null
+      // let descriptionMeta: string | null = null
+      // if(!!usermeta) {
+      //   avatarMeta = usermeta['avatar'] ?? null
+      //   titleMeta = usermeta['title'] ?? null
+      //   followersMeta = parseInt(usermeta['followers']) ?? null
+      //   descriptionMeta = usermeta['description'] ?? null
+      // }
 
       const returnResponse = {
         token: token.token,
@@ -70,12 +70,12 @@ export default class AccessController {
           user_login: user.userLogin,
           display_name: user.displayName,
           user_email: user.userEmail,
-          meta: {
-            avatar: avatarMeta,
-            title: titleMeta,
-            followers: followersMeta,
-            description: descriptionMeta
-          }
+          // meta: {
+          //   avatar: avatarMeta,
+          //   title: titleMeta,
+          //   followers: followersMeta,
+          //   description: descriptionMeta
+          // }
         }
       }
 
@@ -84,7 +84,7 @@ export default class AccessController {
       return response
     }
     catch (error) {
-      response.send({ failure: { message: 'Error ao criar o usuário.' } })
+      response.send({ failure: { message: 'Error when sign in' } })
       response.status(500)
       return response
     }
@@ -99,7 +99,22 @@ export default class AccessController {
       return response
     }
     catch (error) {
-      response.send({ failure: { message: 'Error ao deslogar.' } })
+      response.send({ failure: { message: 'Error logging out.' } })
+      response.status(500)
+      return response
+    }
+  }
+
+  public async checkAuthenticated({ auth, response }: HttpContextContract) {
+    try {
+      await auth.use('api').authenticate()
+
+      response.send({ success: { isAuthenticated: auth.use('api').isAuthenticated } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error checking authentication.' } })
       response.status(500)
       return response
     }
@@ -118,20 +133,4 @@ export default class AccessController {
   // }
 
   // public async changepassword({ auth, request, response }: HttpContextContract) { }
-
-  public async checkAuthenticated({ auth, response }: HttpContextContract) {
-    try {
-      await auth.use('api').authenticate()
-
-      response.send({ success: { isAuthenticated: auth.use('api').isAuthenticated } })
-      response.status(200)
-      return response
-    }
-    catch (error) {
-      response.send({ failure: { message: 'Error ao checar o autenticação.' } })
-      response.status(500)
-      return response
-    }
-  }
-
 }
