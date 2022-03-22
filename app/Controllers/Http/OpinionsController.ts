@@ -99,12 +99,12 @@ export default class OpinionsController {
 
       await opinion.delete()
 
-      response.send({ success: { message: 'Opinion deleted.' }})
+      response.send({ success: { deleted: true }})
       response.status(200)
       return response
     }
     catch (error) {
-      response.send({ failure: { message: 'Error post or put opinions from affirmation.' } })
+      response.send({ failure: { message: 'Error delete opinion from affirmation.' } })
       response.status(500)
       return response
     }
