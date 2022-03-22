@@ -13,7 +13,7 @@ export default class Opinion extends BaseModel {
   public opinionAuthor: number
 
   @column()
-  public opinionAvaliation: number
+  public opinionValue: number
 
   @column()
   public affirmationParent: number | null

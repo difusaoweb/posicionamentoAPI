@@ -13,15 +13,11 @@ Route.group(() => {
   })
 
   Route.group(() => {
-    // // Remove opinion
-    // Route.delete('/opinions/:id?', 'OpinionsController.destroy').where('id', {
-    //   match: /^[0-9]+$/,
-    //   cast: (id) => Number(id),
-    // })
-
-
     // Post or put opinion from affirmation
-    Route.get('/opinions/create', 'OpinionsController.addOrUpdate')
+    Route.get('/opinions/add-or-update', 'OpinionsController.addOrUpdate')
+
+    // Delete opinion
+    Route.get('/opinions/delete', 'OpinionsController.destroy')
   }).middleware('auth')
 
   // Get opinions from user

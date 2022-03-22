@@ -8,49 +8,32 @@ import Affirmation from 'App/Models/Affirmation'
 
 export default class OpinionsController {
 
-  public async index() {
-    const all = await Opinion.all()
-
-    return all
-  }
-
-  public async show({ request, response }: HttpContextContract) {
-    const opinionId: number = request.param('id')
-    const opinion = await Opinion.findOrFail(opinionId)
-    if (!opinion) {
-      return response.notFound('Opinion not found.')
-    }
-
-    return opinion
-  }
-
-
   public async addOrUpdate({ request, auth, response }: HttpContextContract) {
     try {
       const qs = request.qs()
-      if(!(!!qs.affirmation_id || !!qs.avaliation_value)) {
-        response.send({ failure: { message: 'lack of data' } })
+      if(!(!!qs.affirmation_id || !!qs.opinion_value)) {
+        response.send({ failure: { message: 'Lack of data.' } })
         response.status(500)
         return response
       }
       const affirmationId = parseInt(qs.affirmation_id)
-      const avaliationValue = parseFloat(qs.avaliation_value)
+      const opinionValue = parseFloat(qs.opinion_value)
 
       if(!(
-        avaliationValue == 1 ||
-        avaliationValue == 0.5 ||
-        avaliationValue == 0 ||
-        avaliationValue == -0.5 ||
-        avaliationValue == -1
+        opinionValue == 1 ||
+        opinionValue == 0.5 ||
+        opinionValue == 0 ||
+        opinionValue == -0.5 ||
+        opinionValue == -1
       )) {
-        response.send({ failure: { message: 'invalid avaliation_value value' } })
+        response.send({ failure: { message: 'Invalid opinion value.' } })
         response.status(500)
         return response
       }
 
       const affirmation = await Affirmation.find(affirmationId)
       if (!affirmation) {
-        response.send({ failure: { message: 'affirmation not found' } })
+        response.send({ failure: { message: 'Affirmation not found.' } })
         response.status(404)
         return response
       }
@@ -61,7 +44,7 @@ export default class OpinionsController {
       const obj = {
         opinionAuthor: currentUserId,
         affirmationParent: affirmationId,
-        opinionAvaliation: avaliationValue
+        opinionValue: opinionValue
       }
 
       const responseDb = await Database.
@@ -82,7 +65,46 @@ export default class OpinionsController {
       return response
     }
     catch (error) {
-      response.send({ failure: { message: 'error post or put opinions from affirmation' } })
+      response.send({ failure: { message: 'Error post or put opinions from affirmation.' } })
+      response.status(500)
+      return response
+    }
+  }
+
+  public async destroy({ request, auth, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if(!(!!qs.opinion_id)) {
+        response.send({ failure: { message: 'Lack of data.' } })
+        response.status(500)
+        return response
+      }
+      const opinionId = parseInt(qs.opinion_id)
+
+      const opinion = await Opinion.find(opinionId)
+      if (!opinion) {
+        response.send({ failure: { message: 'Opinion not found.' } })
+        response.status(404)
+        return response
+      }
+
+      await auth.use('api').authenticate()
+      const currentUserId: number = auth.use('api').user.id
+
+      if(currentUserId != opinion.opinionAuthor) {
+        response.send({ failure: { message: 'Current user is forbidden from destroy to opinion.' } })
+        response.status(403)
+        return response
+      }
+
+      await opinion.delete()
+
+      response.send({ success: { message: 'Opinion deleted.' }})
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error post or put opinions from affirmation.' } })
       response.status(500)
       return response
     }
@@ -105,7 +127,7 @@ export default class OpinionsController {
             select(
               'id',
               'opinion_author',
-              'opinion_avaliation'
+              'opinion_value'
             ).
             where('affirmation_parent', affirmationId).
             as('opinions_db')
@@ -161,7 +183,7 @@ export default class OpinionsController {
             select('message').
             whereColumn('opinions.affirmation_parent', 'affirmations.id').
             as('affirmation_message'),
-          'opinion_avaliation'
+          'opinion_value'
         ).
         whereNotNull('affirmation_parent').
         where('opinion_author', userId)
@@ -181,5 +203,22 @@ export default class OpinionsController {
       response.status(500)
       return response
     }
+  }
+
+
+  public async index() {
+    const all = await Opinion.all()
+
+    return all
+  }
+
+  public async show({ request, response }: HttpContextContract) {
+    const opinionId: number = request.param('id')
+    const opinion = await Opinion.findOrFail(opinionId)
+    if (!opinion) {
+      return response.notFound('Opinion not found.')
+    }
+
+    return opinion
   }
 }
