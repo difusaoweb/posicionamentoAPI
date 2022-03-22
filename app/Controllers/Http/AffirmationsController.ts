@@ -1,6 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
+import { DateTime } from 'luxon'
 
 import Affirmation from 'App/Models/Affirmation'
 
@@ -24,6 +25,15 @@ export default class AffirmationsController {
 
   public async home({ auth, request, response }: HttpContextContract) {
     try {
+      const qs = request.qs()
+      if(!(!!qs.page || !!qs.per_page)) {
+        response.send({ failure: { message: 'Lack of data.' } })
+        response.status(500)
+        return response
+      }
+      const page = parseInt(qs.page)
+      const perPage = parseInt(qs.per_page)
+
       let currentUserId: number = 0
       if(await auth.use('api').check()) {
         await auth.use('api').authenticate()
@@ -36,20 +46,27 @@ export default class AffirmationsController {
           'affirmations.id',
           'affirmations.message',
           Database.raw(`
-            COUNT(case when opinions.opinion_avaliation = 1 then 1 end) as strongly_agree,
-            COUNT(case when opinions.opinion_avaliation = 0.5 then 0.5 end) as agree,
-            COUNT(case when opinions.opinion_avaliation = 0 then 0 end) as neutral,
-            COUNT(case when opinions.opinion_avaliation = -0.5 then -0.5 end) as disagree,
-            COUNT(case when opinions.opinion_avaliation = -1 then -1 end) as strongly_disagree,
-            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_avaliation end) as opinion_avaliation`, {
+            COUNT(case when opinions.opinion_value = 1 then 1 end) as strongly_agree,
+            COUNT(case when opinions.opinion_value = 0.5 then 0.5 end) as agree,
+            COUNT(case when opinions.opinion_value = 0 then 0 end) as neutral,
+            COUNT(case when opinions.opinion_value = -0.5 then -0.5 end) as disagree,
+            COUNT(case when opinions.opinion_value = -1 then -1 end) as strongly_disagree,
+            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_value end) as opinion_value`, {
               opinionAuthor: currentUserId
             }
           )
         ).
         leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id').
-        groupBy('affirmations.id')
+        groupBy('affirmations.id').
+        paginate(page, perPage)
 
-      response.send({ success: { affirmations: responseDb } })
+      if (responseDb?.length === 0) {
+        response.send({ failure: { message: 'Affirmations not found.' } })
+        response.status(404)
+        return response
+      }
+
+      response.send({ success: { affirmations: responseDb?.toJSON()?.data } })
       response.status(200)
       return response
     }
@@ -68,17 +85,19 @@ export default class AffirmationsController {
           'affirmations.id',
           'affirmations.message',
           Database.raw(`
-            COUNT(case when opinions.opinion_avaliation = 1 then 1 end) as strongly_agree,
-            COUNT(case when opinions.opinion_avaliation = 0.5 then 0.5 end) as agree,
-            COUNT(case when opinions.opinion_avaliation = 0 then 0 end) as neutral,
-            COUNT(case when opinions.opinion_avaliation = -0.5 then -0.5 end) as disagree,
-            COUNT(case when opinions.opinion_avaliation = -1 then -1 end) as strongly_disagree`
+            COUNT(case when opinions.opinion_value = 1 then 1 end) as strongly_agree,
+            COUNT(case when opinions.opinion_value = 0.5 then 0.5 end) as agree,
+            COUNT(case when opinions.opinion_value = 0 then 0 end) as neutral,
+            COUNT(case when opinions.opinion_value = -0.5 then -0.5 end) as disagree,
+            COUNT(case when opinions.opinion_value = -1 then -1 end) as strongly_disagree`
           )
         ).
         leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id').
-        groupBy('affirmations.id')
+        where('opinions.updated_at', '>=', DateTime.local().minus({days: 1}).toSQL()).
+        groupBy('affirmations.id').
+        orderBy(Database.raw(`COUNT(opinions.opinion_value)`), 'desc')
 
-      if (!responseDb) {
+      if (!responseDb[0]) {
         response.send({ failure: { message: 'affirmations not found' } })
         response.status(404)
         return response
@@ -161,12 +180,12 @@ export default class AffirmationsController {
           'affirmations.id',
           'affirmations.message',
           Database.raw(`
-            COUNT(case when opinions.opinion_avaliation = 1 then 1 end) as strongly_agree,
-            COUNT(case when opinions.opinion_avaliation = 0.5 then 0.5 end) as agree,
-            COUNT(case when opinions.opinion_avaliation = 0 then 0 end) as neutral,
-            COUNT(case when opinions.opinion_avaliation = -0.5 then -0.5 end) as disagree,
-            COUNT(case when opinions.opinion_avaliation = -1 then -1 end) as strongly_disagree,
-            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_avaliation end) as opinion_avaliation`, {
+            COUNT(case when opinions.opinion_value = 1 then 1 end) as strongly_agree,
+            COUNT(case when opinions.opinion_value = 0.5 then 0.5 end) as agree,
+            COUNT(case when opinions.opinion_value = 0 then 0 end) as neutral,
+            COUNT(case when opinions.opinion_value = -0.5 then -0.5 end) as disagree,
+            COUNT(case when opinions.opinion_value = -1 then -1 end) as strongly_disagree,
+            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_value end) as opinion_value`, {
               opinionAuthor: currentUserId
             }
           )
@@ -184,7 +203,7 @@ export default class AffirmationsController {
           neutral: 0,
           disagree: 0,
           strongly_disagree: 0,
-          opinion_avaliation: null
+          opinion_value: null
         }
       }
       else {
