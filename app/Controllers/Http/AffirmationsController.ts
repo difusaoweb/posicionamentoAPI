@@ -6,22 +6,6 @@ import { DateTime } from 'luxon'
 import Affirmation from 'App/Models/Affirmation'
 
 export default class AffirmationsController {
-  public async index() {
-    const all = await Affirmation.all()
-
-    return all
-  }
-
-  public async show({ request, response }: HttpContextContract) {
-    const affirmationId: number = request.param('id')
-    const affirmation = await Affirmation.findOrFail(affirmationId)
-    if (!affirmation) {
-      return response.notFound('Affirmation not found.')
-    }
-
-    return affirmation
-  }
-
 
   public async home({ auth, request, response }: HttpContextContract) {
     try {
@@ -160,12 +144,12 @@ export default class AffirmationsController {
       }
       const affirmationId = parseInt(qs.affirmation_id)
 
-      const affirmation = await Affirmation.find(affirmationId)
-      if (!affirmation) {
-        response.send({ failure: { message: 'affirmation not found' } })
-        response.status(404)
-        return response
-      }
+      // const affirmation = await Affirmation.find(affirmationId)
+      // if (!affirmation) {
+      //   response.send({ failure: { message: 'affirmation not found' } })
+      //   response.status(404)
+      //   return response
+      // }
 
       let currentUserId: number = 0
       if(await auth.use('api').check()) {
@@ -173,7 +157,6 @@ export default class AffirmationsController {
         currentUserId = auth.use('api').user.id
       }
 
-      let theAffirmation = {}
       const responseDb = await Database.
         from('opinions').
         select(
@@ -185,6 +168,7 @@ export default class AffirmationsController {
             COUNT(case when opinions.opinion_value = 0 then 0 end) as neutral,
             COUNT(case when opinions.opinion_value = -0.5 then -0.5 end) as disagree,
             COUNT(case when opinions.opinion_value = -1 then -1 end) as strongly_disagree,
+            SUM(case when opinions.opinion_author = :opinionAuthor then opinions.id end) as opinion_id,
             SUM(case when opinions.opinion_author = :opinionAuthor then opinions.opinion_value end) as opinion_value`, {
               opinionAuthor: currentUserId
             }
@@ -194,31 +178,49 @@ export default class AffirmationsController {
         where('affirmations.id', affirmationId).
         groupBy('affirmations.id')
 
-      if (!responseDb[0]) {
-        theAffirmation = {
-          id: affirmationId,
-          message: affirmation.message,
-          strongly_agree: 0,
-          agree: 0,
-          neutral: 0,
-          disagree: 0,
-          strongly_disagree: 0,
-          opinion_value: null
-        }
-      }
-      else {
-        theAffirmation = responseDb[0]
+      if (responseDb?.length === 0) {
+        response.send({ failure: { message: 'affirmation not found' } })
+        response.status(404)
+        return response
       }
 
-      response.send({ success: { affirmation: theAffirmation } })
+      const affirmation = {
+        id: parseInt(responseDb[0].id),
+        message: responseDb[0].message,
+        strongly_agree: parseInt(responseDb[0].strongly_agree),
+        agree: parseInt(responseDb[0].agree),
+        neutral: parseInt(responseDb[0].neutral),
+        disagree: parseInt(responseDb[0].disagree),
+        strongly_disagree: parseInt(responseDb[0].strongly_disagree),
+        opinion: responseDb[0].opinion_id ? { id: parseInt(responseDb[0].opinion_id), value: parseInt(responseDb[0].opinion_value) } : null
+      }
+
+      response.send({ success: { affirmation } })
       response.status(200)
       return response
     }
     catch (err) {
-      response.send({ failure: { message: 'error get single affirmation' } })
+      response.send({ failure: { message: 'Error get single affirmation.' } })
       response.status(500)
       return response
     }
+  }
+
+
+  public async index() {
+    const all = await Affirmation.all()
+
+    return all
+  }
+
+  public async show({ request, response }: HttpContextContract) {
+    const affirmationId: number = request.param('id')
+    const affirmation = await Affirmation.findOrFail(affirmationId)
+    if (!affirmation) {
+      return response.notFound('Affirmation not found.')
+    }
+
+    return affirmation
   }
 
   public async create({ request, response }: HttpContextContract) {
