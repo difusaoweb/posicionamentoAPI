@@ -54,17 +54,22 @@ export default class OpinionsController {
         where('affirmation_parent', affirmationId)
 
       let opinionId = 0
-      if(!!responseDb) {
-        opinionId = parseInt(responseDb[0]?.id)
+      if(responseDb.length == 0) {
+        const opinion = await Opinion.create(obj)
+        opinionId = opinion.id
+      }
+      else {
+        const opinion = await Opinion.updateOrCreate({ id: parseInt(responseDb[0]?.id) }, obj)
+        opinionId = opinion.id
       }
 
-      const opinion = await Opinion.updateOrCreate({ id: opinionId }, obj)
-
-      response.send({ success: { opinion_id: opinion.id }})
+      response.send({ success: { opinion_id: opinionId }})
       response.status(200)
       return response
     }
-    catch (error) {
+    catch (err) {
+      console.log(err)
+
       response.send({ failure: { message: 'Error post or put opinions from affirmation.' } })
       response.status(500)
       return response
