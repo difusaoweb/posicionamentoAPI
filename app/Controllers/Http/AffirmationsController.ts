@@ -50,7 +50,10 @@ export default class AffirmationsController {
         return response
       }
 
-      response.send({ success: { affirmations: responseDb?.toJSON()?.data } })
+      response.send({ success: {
+        affirmations: responseDb?.toJSON()?.data,
+        last_page: responseDb?.toJSON()?.meta?.last_page
+      } })
       response.status(200)
       return response
     }
@@ -138,7 +141,7 @@ export default class AffirmationsController {
     try {
       const qs = request.qs()
       if(!(!!qs?.affirmation_id)) {
-        response.send({ failure: { message: 'lack of data' }})
+        response.send({ failure: { message: 'Lack of data.' }})
         response.status(500)
         return response
       }
@@ -179,7 +182,7 @@ export default class AffirmationsController {
         groupBy('affirmations.id')
 
       if (responseDb?.length === 0) {
-        response.send({ failure: { message: 'affirmation not found' } })
+        response.send({ failure: { message: 'Affirmation not found.' } })
         response.status(404)
         return response
       }
@@ -192,7 +195,7 @@ export default class AffirmationsController {
         neutral: parseInt(responseDb[0].neutral),
         disagree: parseInt(responseDb[0].disagree),
         strongly_disagree: parseInt(responseDb[0].strongly_disagree),
-        opinion: responseDb[0].opinion_id ? { id: parseInt(responseDb[0].opinion_id), value: parseInt(responseDb[0].opinion_value) } : null
+        opinion: responseDb[0].opinion_id ? { id: parseInt(responseDb[0].opinion_id), value: parseFloat(responseDb[0].opinion_value) } : null
       }
 
       response.send({ success: { affirmation } })
