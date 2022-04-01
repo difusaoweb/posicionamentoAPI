@@ -1,11 +1,85 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
+import Mail from '@ioc:Adonis/Addons/Mail'
 
 import User from 'App/Models/User'
 import { getUsermetaAll } from 'App/Controllers/Http/UsermetaController'
 
 export default class UsersController {
+
+  public async create({ auth, request, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if(
+        !(!!qs?.user_login) ||
+        !(!!qs?.user_pass) ||
+        !(!!qs?.user_email) ||
+        !(!!qs?.display_name)
+      ) {
+        response.send({ failure: { message: 'Lack of data.' }})
+        response.status(500)
+        return response
+      }
+
+      const userLogin = String(qs.user_login)
+      const userPass = String(qs.user_pass)
+      const userEmail = String(qs.user_email)
+      const displayName = String(qs.display_name)
+
+      const responseDb = await Database.
+        from('users').
+        select('id').
+        where('user_login', userLogin).
+        where('user_email', userEmail)
+
+      if(responseDb.length == 1) {
+        response.send({ failure: { message: 'User already exists.' }})
+        response.status(500)
+        return response
+      }
+
+      const user = {
+        userLogin,
+        userPass,
+        userEmail,
+        displayName
+      }
+
+      // const user = await User.create({
+      //   userLogin,
+      //   userPass,
+      //   userEmail,
+      //   displayName
+      // })
+
+      const token = await auth.use('api').generate(user, {
+        name: user.displayName,
+        expiresIn: '2hours'
+      })
+
+      const token = 'as4d5a4s56d4as56d4as56d4a6s54d5as4'
+      const url = `google.com/login?token=${token}`
+
+      await Mail.use('smtp').send((message) => {
+        message
+          .from('inc@difusaoweb.com')
+          .to(userEmail)
+          .subject('Please verify your email')
+          .htmlView('emails/verify', { user, url })
+      })
+
+      // response.send({ success: { user_id: user.id } })
+      response.send({ success: { user_id: 1 } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error ao criar o usuário.' } })
+      response.status(500)
+      return response
+    }
+  }
 
 
 
@@ -62,55 +136,6 @@ export default class UsersController {
       title: titleMeta,
       followers: followersMeta,
       description: descriptionMeta
-    }
-  }
-
-  public async addUserM({ request, response }: HttpContextContract) {
-    try {
-      const qs = request.qs()
-      if(
-        !(!!qs?.user_login) ||
-        !(!!qs?.user_pass) ||
-        !(!!qs?.user_email) ||
-        !(!!qs?.display_name)
-      ) {
-        response.send({ failure: { message: 'Falta de dados.' }})
-        response.status(500)
-        return response
-      }
-
-      const userLogin = String(qs.user_login)
-      const userPass = String(qs.user_pass)
-      const userEmail = String(qs.user_email)
-      const displayName = String(qs.display_name)
-
-      const responseDb = await Database.
-        from('users').
-        select('id').
-        where('user_login', userLogin).
-        where('user_email', userEmail)
-
-      if(!!responseDb[0]?.id) {
-        response.send({ failure: { message: 'Usuário já existe.' }})
-        response.status(500)
-        return response
-      }
-
-      const user = await User.create({
-        userLogin,
-        userPass,
-        userEmail,
-        displayName
-      })
-
-      response.send({ success: { user_id: user.id } })
-      response.status(200)
-      return response
-    }
-    catch (error) {
-      response.send({ failure: { message: 'Error ao criar o usuário.' } })
-      response.status(500)
-      return response
     }
   }
 

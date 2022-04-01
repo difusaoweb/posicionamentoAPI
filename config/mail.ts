@@ -53,6 +53,19 @@ const mailConfig: MailConfig = {
 			}
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | SparkPost
+    |--------------------------------------------------------------------------
+    |
+		| Uses Sparkpost service for sending emails.
+    |
+    */
+    sparkpost: {
+      driver: 'sparkpost',
+      baseUrl: 'https://api.sparkpost.com/api/v1',
+      key: Env.get('SPARKPOST_API_KEY'),
+    },
   },
 }
 

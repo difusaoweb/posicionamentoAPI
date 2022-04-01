@@ -1,6 +1,11 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
+
+  // Create user
+  Route.get('/users/create', 'UsersController.create')
+
+
   // Get all users
   Route.get('/users', 'UsersController.index')
 
@@ -9,9 +14,6 @@ Route.group(() => {
     match: /^[0-9]+$/,
     cast: (id) => Number(id),
   })
-
-  // Create user
-  Route.get('/users/create', 'UsersController.addUserM')
 
   // Get user profile
   Route.get('/users/profile', 'UsersController.profile')
