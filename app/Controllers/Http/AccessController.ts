@@ -197,7 +197,50 @@ export default class AccessController {
     }
   }
 
-  public async changePassword({ auth, request, response }: HttpContextContract) {
+  public async resetPasswordVerifyCode({ auth, request, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if(
+        !(!!qs?.token)
+      ) {
+        response.send({ failure: { message: 'Lack of data.' }})
+        response.status(500)
+        return response
+      }
+
+      const token = String(qs.token)
+
+      const responseDb = await Database.query().
+        from('api_tokens').
+        select('user_id').
+        where('token', token).
+        andWhere('name', 'forgot-password')
+
+      if(responseDb.length == 0) {
+        response.send({ failure: { message: 'Token not found.' }})
+        response.status(404)
+        return response
+      }
+
+      const user = await User.find(responseDb[0].user_id)
+      if(!user) {
+        response.send({ failure: { message: 'User not found.' }})
+        response.status(404)
+        return response
+      }
+
+      response.send({ success: { user_id: user.id } })
+      response.status(200)
+      return response
+    }
+    catch (error) {
+      response.send({ failure: { message: 'Error change password.' } })
+      response.status(500)
+      return response
+    }
+  }
+
+  public async resetPasswordChangePassword({ auth, request, response }: HttpContextContract) {
     try {
       const qs = request.qs()
       if(
