@@ -1,49 +1,41 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import User from 'App/Models/User'
 import Hash from '@ioc:Adonis/Core/Hash'
-import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 import Mail from '@ioc:Adonis/Addons/Mail'
 import Env from '@ioc:Adonis/Core/Env'
 import { DateTime } from 'luxon'
 
 import ApiToken from 'App/Models/ApiToken'
-import { getUsermetaAll } from 'App/Controllers/Http/UsermetaController'
+import AccessService from 'App/Services/AccessService'
 
 export default class AccessController {
   public async login({ auth, request, response }: HttpContextContract) {
     try {
       const qs = request.qs()
-      if(
-        !(!!qs?.user_login) ||
-        !(!!qs?.user_pass)
-      ) {
+      if (!qs?.login || !qs?.password) {
         response.send({ failure: { message: 'Lack of data.' }})
         response.status(500)
         return response
       }
+      const login = String(qs.login)
+      const password = String(qs.password)
 
-      const userLogin = String(qs.user_login)
-      const userPass = String(qs.user_pass)
-
-      const users = await Database.query().
+      const responseDb = await Database.query().
         from('users').
         select('id').
-        where((query) => {
-          query.where('user_email', userLogin)
-        }).
-        orWhere((query) => {
-          query.where('user_login', userLogin)
-        })
+        where('email', login).
+        orWhere('username', login)
 
-      if(!(!!users[0]?.id)) {
+      if(responseDb.length == 0) {
         response.send({ failure: { message: 'User not found.' }})
         response.status(404)
         return response
       }
-      const user = await User.findOrFail(users[0].id)
 
-      if (!(await Hash.verify(user.userPass, userPass))) {
+      const user = await User.findOrFail(responseDb[0].id)
+
+      if (!(await Hash.verify(user.password, password))) {
         response.send({ failure: { message: 'Incorrect password.' }})
         response.status(403)
         return response
@@ -71,9 +63,9 @@ export default class AccessController {
         token: token.token,
         user: {
           id: user.id,
-          user_login: user.userLogin,
+          username: user.username,
           display_name: user.displayName,
-          user_email: user.userEmail,
+          email: user.email,
           // meta: {
           //   avatar: avatarMeta,
           //   title: titleMeta,
@@ -87,7 +79,8 @@ export default class AccessController {
       response.status(200)
       return response
     }
-    catch (error) {
+    catch(err) {
+      console.log(err)
       response.send({ failure: { message: 'Error when sign in.' } })
       response.status(500)
       return response
@@ -124,7 +117,7 @@ export default class AccessController {
     }
   }
 
-  public async resetPassword({ auth, request, response }: HttpContextContract) {
+  public async resetPassword({ request, response }: HttpContextContract) {
     function generateToken(len) {
       let text = ''
       let charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -136,7 +129,7 @@ export default class AccessController {
     try {
       const qs = request.qs()
       if(
-        !(!!qs?.user_login)
+        !(!!qs?.username)
       ) {
         response.send({ failure: { message: 'Lack of data.' }})
         response.status(500)
@@ -144,16 +137,16 @@ export default class AccessController {
       }
 
       const lang = 'pt-BR' //pt-BR or en-UK
-      const userLogin = String(qs.user_login)
+      const username = String(qs.username)
 
       const users = await Database.query().
         from('users').
         select('id').
         where((query) => {
-          query.where('user_email', userLogin)
+          query.where('email', username)
         }).
         orWhere((query) => {
-          query.where('user_login', userLogin)
+          query.where('username', username)
         })
 
       if(users.length == 0) {
@@ -181,7 +174,7 @@ export default class AccessController {
       await Mail.use('smtp').send((message) => {
         message
           .from(Env.get('EMAIL_FROM'))
-          .to(user.userEmail)
+          .to(user.email)
           .subject(emailSubject)
           .htmlView('emails/passwordReset', { lang, displayName: user.displayName, token })
       })
@@ -197,55 +190,12 @@ export default class AccessController {
     }
   }
 
-  public async resetPasswordVerifyCode({ auth, request, response }: HttpContextContract) {
-    try {
-      const qs = request.qs()
-      if(
-        !(!!qs?.token)
-      ) {
-        response.send({ failure: { message: 'Lack of data.' }})
-        response.status(500)
-        return response
-      }
-
-      const token = String(qs.token)
-
-      const responseDb = await Database.query().
-        from('api_tokens').
-        select('user_id').
-        where('token', token).
-        andWhere('name', 'forgot-password')
-
-      if(responseDb.length == 0) {
-        response.send({ failure: { message: 'Token not found.' }})
-        response.status(404)
-        return response
-      }
-
-      const user = await User.find(responseDb[0].user_id)
-      if(!user) {
-        response.send({ failure: { message: 'User not found.' }})
-        response.status(404)
-        return response
-      }
-
-      response.send({ success: { user_id: user.id } })
-      response.status(200)
-      return response
-    }
-    catch (error) {
-      response.send({ failure: { message: 'Error change password.' } })
-      response.status(500)
-      return response
-    }
-  }
-
-  public async resetPasswordChangePassword({ auth, request, response }: HttpContextContract) {
+  public async resetPasswordChangePassword({ request, response }: HttpContextContract) {
     try {
       const qs = request.qs()
       if(
         !(!!qs?.token) ||
-        !(!!qs?.user_pass)
+        !(!!qs?.password)
       ) {
         response.send({ failure: { message: 'Lack of data.' }})
         response.status(500)
@@ -253,7 +203,7 @@ export default class AccessController {
       }
 
       const token = String(qs.token)
-      const userPass = String(qs.user_pass)
+      const password = String(qs.password)
 
       const responseDb = await Database.query().
         from('api_tokens').
@@ -268,7 +218,7 @@ export default class AccessController {
       }
 
       const user = await User.findOrFail(responseDb[0].user_id)
-      user.userPass = userPass
+      user.password = password
       await user.save()
 
       response.send({ success: { change_password: true } })
@@ -276,6 +226,51 @@ export default class AccessController {
       return response
     }
     catch (error) {
+      response.send({ failure: { message: 'Error change password.' } })
+      response.status(500)
+      return response
+    }
+  }
+
+  public async verifyCodeEmail({ auth, request, response }: HttpContextContract) {
+    try {
+      const qs = request.qs()
+      if (!qs?.token) {
+        response.send({ failure: { message: 'Lack of data.' }})
+        response.status(500)
+        return response
+      }
+      const token = String(qs.token)
+
+      const tokenHashSha256 = AccessService.hashSha256(token)
+
+      const responseDb = await Database.query().
+        from('api_tokens').
+        select('user_id').
+        where('token', tokenHashSha256).
+        andWhere('name', 'verify-email')
+
+      if (responseDb.length == 0) {
+        response.send({ failure: { message: 'Token not found.' }})
+        response.status(404)
+        return response
+      }
+
+      const currentUserId = await AccessService.currentUserId(auth)
+      const userId = responseDb[0].user_id
+
+      if (currentUserId != userId) {
+        response.send({ failure: { message: 'User not found.' }})
+        response.status(404)
+        return response
+      }
+
+      response.send({ success: { user_id: userId } })
+      response.status(200)
+      return response
+    }
+    catch (err) {
+      console.log(err)
       response.send({ failure: { message: 'Error change password.' } })
       response.status(500)
       return response

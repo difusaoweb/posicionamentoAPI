@@ -12,19 +12,13 @@ export default class Opinions extends BaseSchema {
         inTable('users').
         onDelete('CASCADE').
         notNullable()
-      table.integer('evaluation', 1).notNullable().defaultTo(0)
+      table.float('opinion_value', 1, 1).notNullable()
       table.integer('affirmation_parent').
         unsigned().
         references('id').
         inTable('affirmations').
         onDelete('CASCADE').
-        nullable()
-      table.integer('opinion_parent').
-        unsigned().
-        references('id').
-        inTable('opinions').
-        onDelete('CASCADE').
-        nullable()
+        notNullable()
 
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL

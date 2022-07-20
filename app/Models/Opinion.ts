@@ -4,7 +4,6 @@ import { BaseModel, column, belongsTo, BelongsTo, hasMany, HasMany } from '@ioc:
 import User from 'App/Models/User'
 import Affirmation from 'App/Models/Affirmation'
 
-
 export default class Opinion extends BaseModel {
   @column({ isPrimary: true })
   public id: number
@@ -16,21 +15,13 @@ export default class Opinion extends BaseModel {
   public opinionValue: number
 
   @column()
-  public affirmationParent: number | null
-
-  @column()
-  public opinionParent: number | null
+  public affirmationParent: number
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
-
-  @hasMany(() => Opinion, {
-    foreignKey: 'opinion_parent',
-  })
-  public opinions: HasMany<typeof Opinion>
 
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>

@@ -36,13 +36,17 @@ export default class AuthMiddleware {
       guardLastAttempted = guard
 
       if (await auth.use(guard).check()) {
-        /**
-         * Instruct auth to use the given guard as the default guard for
-         * the rest of the request, since the user authenticated
-         * succeeded here
-         */
-        auth.defaultGuard = guard
-        return true
+
+        const tokenName = await auth.use(guard).token?.name
+        if (tokenName == 'login') {
+          /**
+           * Instruct auth to use the given guard as the default guard for
+           * the rest of the request, since the user authenticated
+           * succeeded here
+           */
+          auth.defaultGuard = guard
+          return true
+        }
       }
     }
 

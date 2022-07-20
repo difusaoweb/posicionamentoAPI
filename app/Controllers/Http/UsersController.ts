@@ -2,91 +2,82 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 import Mail from '@ioc:Adonis/Addons/Mail'
+import { DateTime } from 'luxon'
+import Env from '@ioc:Adonis/Core/Env'
 
+import ApiToken from 'App/Models/ApiToken'
 import User from 'App/Models/User'
-import { getUsermetaAll } from 'App/Controllers/Http/UsermetaController'
+import AccessService from 'App/Services/AccessService'
 
 export default class UsersController {
 
-  public async create({ auth, request, response }: HttpContextContract) {
+  public async create({ request, response }: HttpContextContract) {
     try {
       const qs = request.qs()
-      if(
-        !(!!qs?.user_login) ||
-        !(!!qs?.user_pass) ||
-        !(!!qs?.user_email) ||
-        !(!!qs?.display_name)
-      ) {
+      if (!qs?.username || !qs?.password || !qs?.email || !qs?.display_name) {
         response.send({ failure: { message: 'Lack of data.' }})
         response.status(500)
         return response
       }
-
-      const userLogin = String(qs.user_login)
-      const userPass = String(qs.user_pass)
-      const userEmail = String(qs.user_email)
+      const username = String(qs.username)
+      const password = String(qs.password)
+      const email = String(qs.email)
       const displayName = String(qs.display_name)
 
       const responseDb = await Database.
         from('users').
         select('id').
-        where('user_login', userLogin).
-        where('user_email', userEmail)
+        where('username', username).
+        orWhere('email', email)
 
       if(responseDb.length == 1) {
         response.send({ failure: { message: 'User already exists.' }})
-        response.status(500)
+        response.status(409)
         return response
       }
 
-      const user = {
-        userLogin,
-        userPass,
-        userEmail,
+      const user = await User.create({
+        username,
+        password,
+        email,
         displayName
-      }
-
-      // const user = await User.create({
-      //   userLogin,
-      //   userPass,
-      //   userEmail,
-      //   displayName
-      // })
-
-      const token = await auth.use('api').generate(user, {
-        name: user.displayName,
-        expiresIn: '2hours'
       })
 
-      const token = 'as4d5a4s56d4as56d4as56d4a6s54d5as4'
-      const url = `google.com/login?token=${token}`
+      const token = `${AccessService.generateToken(3)}-${AccessService.generateToken(3)}`
+      const tokenHashSha256 = AccessService.hashSha256(token)
+      const expiresAt: DateTime = DateTime.now().plus({hours: 2})
+
+      const theTokenObj = {
+        userId: user.id,
+        name: 'verify-email',
+        type: 'api',
+        token: tokenHashSha256,
+        expiresAt: expiresAt
+      }
+
+      await ApiToken.create(theTokenObj)
+
+      const lang = 'pt-BR' //pt-BR or en-UK
+      const emailSubject = (lang == 'pt-BR') ? 'Por favor verifique seu e-mail.' : 'Please verify your email.'
 
       await Mail.use('smtp').send((message) => {
         message
-          .from('inc@difusaoweb.com')
-          .to(userEmail)
-          .subject('Please verify your email')
-          .htmlView('emails/verify', { user, url })
+          .from(Env.get('EMAIL_FROM'))
+          .to(user.email)
+          .subject(emailSubject)
+          .htmlView('emails/verify', { lang, displayName: user.displayName, token })
       })
 
-      // response.send({ success: { user_id: user.id } })
-      response.send({ success: { user_id: 1 } })
+      response.send({ success: { user_id: user.id } })
       response.status(200)
       return response
     }
-    catch (error) {
-      response.send({ failure: { message: 'Error ao criar o usuário.' } })
+    catch (err) {
+      console.log(err)
+      response.send({ failure: { message: 'Error creating user.' } })
       response.status(500)
       return response
     }
-  }
-
-
-
-  public async index() {
-    const all = await User.all()
-
-    return all
   }
 
   public async show({ request, response }: HttpContextContract) {
@@ -98,7 +89,6 @@ export default class UsersController {
 
     return user
   }
-
 
   public async profile({ request, response }: HttpContextContract) {
     const qs = request.qs()
@@ -130,7 +120,7 @@ export default class UsersController {
     }
 
     return {
-      userLogin: user.userLogin,
+      username: user.username,
       displayName: user.displayName,
       avatar: avatarMeta,
       title: titleMeta,
@@ -147,52 +137,52 @@ export default class UsersController {
     }
 
     const newSchema = schema.create({
-      user_login: schema.string(),
-      user_pass: schema.string(),
-      user_email: schema.string(),
+      username: schema.string(),
+      password: schema.string(),
+      email: schema.string(),
       display_name: schema.string(),
     })
     const requestBody = await request.validate({ schema: newSchema })
 
     let userObj = {
-      userLogin: user.userLogin,
-      userEmail: user.userEmail,
+      username: user.username,
+      email: user.email,
       displayName: user.displayName,
-      userPass: user.userPass
+      password: user.password
     }
 
-    //userLogin
-    if (requestBody.user_login) {
-      if (requestBody.user_login != user.userLogin) {
-        const searchUserLogin = await User.findBy('user_login', requestBody.user_login)
+    //username
+    if (requestBody.username) {
+      if (requestBody.username != user.username) {
+        const searchUserLogin = await User.findBy('username', requestBody.username)
         if (searchUserLogin) {
-          return response.notFound('userLogin já está em uso.')
+          return response.notFound('username já está em uso.')
         }
 
-        userObj.userLogin = requestBody.user_login
+        userObj.username = requestBody.username
       }
     }
-    //userLogin
+    //username
 
-    //userEmail
-    if (requestBody.user_email) {
-      if (requestBody.user_email != user.userEmail) {
-        const searchUserEmail = await User.findBy('user_email', requestBody.user_email)
+    //email
+    if (requestBody.email) {
+      if (requestBody.email != user.email) {
+        const searchUserEmail = await User.findBy('email', requestBody.email)
         if (searchUserEmail) {
-          return response.notFound('userEmail já está em uso.')
+          return response.notFound('email já está em uso.')
         }
 
-        userObj.userEmail = requestBody.user_email
+        userObj.email = requestBody.email
       }
     }
-    //userEmail
+    //email
 
     if (requestBody.display_name) {
       userObj.displayName = requestBody.display_name
     }
 
-    if (requestBody.user_pass) {
-      userObj.userPass = requestBody.user_pass
+    if (requestBody.password) {
+      userObj.password = requestBody.password
     }
 
     const theUser = await User.updateOrCreate({ id: userId }, userObj)

@@ -1,9 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 
 import Opinion from 'App/Models/Opinion'
-import User from 'App/Models/User'
 import Affirmation from 'App/Models/Affirmation'
 
 export default class OpinionsController {
@@ -139,7 +137,7 @@ export default class OpinionsController {
         }).
         select(
           'opinions_db.*',
-          'user_login',
+          'username',
           'usermeta.meta_value as avatar'
         ).
         leftJoin('users', 'users.id', '=', 'opinions_db.opinion_author').
@@ -208,13 +206,6 @@ export default class OpinionsController {
       response.status(500)
       return response
     }
-  }
-
-
-  public async index() {
-    const all = await Opinion.all()
-
-    return all
   }
 
   public async show({ request, response }: HttpContextContract) {

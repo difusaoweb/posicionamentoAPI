@@ -5,7 +5,6 @@ Route.group(() => {
   // Create user
   Route.get('/users/create', 'UsersController.create')
 
-
   // Get all users
   Route.get('/users', 'UsersController.index')
 

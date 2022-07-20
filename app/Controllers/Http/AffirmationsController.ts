@@ -1,5 +1,4 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 import { DateTime } from 'luxon'
 
@@ -64,8 +63,17 @@ export default class AffirmationsController {
     }
   }
 
-  public async trending({ response }: HttpContextContract) {
+  public async trending({ request, response }: HttpContextContract) {
     try {
+      const qs = request.qs()
+      if (!qs.page || !qs.per_page) {
+        response.send({ failure: { message: 'Lack of data.' } })
+        response.status(500)
+        return response
+      }
+      const page = parseInt(qs.page)
+      const perPage = parseInt(qs.per_page)
+
       const responseDb = await Database.
         from('opinions').
         select(
@@ -82,19 +90,24 @@ export default class AffirmationsController {
         leftJoin('affirmations', 'opinions.affirmation_parent', '=', 'affirmations.id').
         where('opinions.updated_at', '>=', DateTime.local().minus({days: 1}).toSQL()).
         groupBy('affirmations.id').
-        orderBy(Database.raw(`COUNT(opinions.opinion_value)`), 'desc')
+        orderBy(Database.raw(`COUNT(opinions.opinion_value)`), 'desc').
+        paginate(page, perPage)
 
-      if (!responseDb[0]) {
+      if (responseDb.all().length == 0) {
         response.send({ failure: { message: 'affirmations not found' } })
         response.status(404)
         return response
       }
 
-      response.send({ success: { affirmations: responseDb } })
+      response.send({ success: {
+        affirmations: responseDb.all(),
+        last_page: responseDb.lastPage
+      } })
       response.status(200)
       return response
     }
-    catch (error) {
+    catch (err) {
+      console.log(err)
       response.send({ failure: { message: 'error get affirmations from trending' } })
       response.status(500)
       return response
@@ -104,33 +117,42 @@ export default class AffirmationsController {
   public async search({ request, response }: HttpContextContract) {
     try {
       const qs = request.qs()
-      if(!(!!qs?.search)) {
+      if(!qs?.search || !qs.page || !qs.per_page) {
         response.send({ failure: { message: 'lack of data' }})
         response.status(500)
         return response
       }
       const search = String(qs.search)
+      const page = parseInt(qs.page)
+      const perPage = parseInt(qs.per_page)
 
       const responseDb = await Database
         .from('affirmations')
-        .select('*')
-        .where('message', 'like', '%'+ search +'%')
+        .select('id', 'message')
+        .where('message', 'like', '%'+ search +'%').
+        paginate(page, perPage)
 
-      if (responseDb?.length === 0) {
+      if (responseDb.all().length == 0) {
         response.send({ failure: { message: 'affirmations not found' } })
         response.status(404)
         return response
       }
 
-      const affirmations = responseDb.map((affirmation: Affirmation) => {
-        return { id: affirmation.id, message: affirmation.message }
-      })
+      response.send({ success: {
+        affirmations: responseDb.all(),
+        last_page: responseDb.lastPage
+      } })
 
-      response.send({ success: { affirmations } })
+      // const affirmations = responseDb.map((affirmation: Affirmation) => {
+      //   return { id: affirmation.id, message: affirmation.message }
+      // })
+
+      // response.send({ success: { affirmations } })
       response.status(200)
       return response
     }
-    catch (error) {
+    catch (err) {
+      console.log(err)
       response.send({ failure: { message: 'error get affirmations from search' } })
       response.status(500)
       return response
@@ -207,13 +229,6 @@ export default class AffirmationsController {
       response.status(500)
       return response
     }
-  }
-
-
-  public async index() {
-    const all = await Affirmation.all()
-
-    return all
   }
 
   public async show({ request, response }: HttpContextContract) {
